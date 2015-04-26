@@ -23,6 +23,23 @@ NDS_CONF=/etc/nodogsplash/nodogsplash.conf
 OPTIONS="-s -f -d 5"
 
 start_service() {
+	
+	FBURL=`grep FBServerURL $NDS_CONF | cut -d' ' -f2`
+#	[ -n "$FBURL" ] && FBIP=`nslookup $FBURL | grep $FBURL | awk '/^Address 1:.*/ { print $3 }'`
+	[ -n "$FBURL" ] && FBIP=`nslookup $FBURL | tail -n 1 | awk '/^Address 1:.*/ { print $3 }'`
+	[ -n "$FBIP" ] && sed -i  "s/FBServerIP.*/FBServerIP $FBIP/" $NDS_CONF
+	[ -n "$FBIP" ] && sed -i  "s/FirewallRule allow tcp port 80 to.*/FirewallRule allow tcp port 80 to $FBIP/" $NDS_CONF
+	
+	LANIP=`uci get network.lan.ipaddr`
+	[ -n "$LAN4 IP" ] && sed -i  "s/FirewallRule allow to.*/FirewallRule allow to $LANIP/" $NDS_CONF
+	
+	UID=`uci get network.wan.macaddr`
+	 [ -n "$UID" ] && sed -i "s/UID.*/UID $UID/" $NDS_CONF
+	 
+	 killall easyhttp.sh 
+	 killall nc
+	 [ -f /usr/bin/easyhttp.sh ] && cd /tmp && /usr/bin/easyhttp.sh &
+	 
 	if test_module ;  then
 		procd_open_instance
 		procd_set_param command /usr/bin/nodogsplash $OPTIONS
